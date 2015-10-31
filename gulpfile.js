@@ -1,30 +1,34 @@
 var gulp = require('gulp');
-var uglify = require('gulp-uglify');
-var htmlreplace = require('gulp-html-replace');
 var source = require('vinyl-source-stream');
 var browserify = require('browserify');
 var watchify = require('watchify');
 var reactify = require('reactify');
-var streamify = require('gulp-streamify');
 
 var path = {
   HTML: 'public/src/index.html',
-  MINIFIED_OUT: 'build.min.js',
+  CSS: 'public/src/styles/*.css',
   OUT: 'build.js',
   DEST: 'public/dist',
-  DEST_BUILD: 'public/dist/build',
   DEST_SRC: 'public/dist/src',
+  DEST_CSS: 'public/dist/src/styles',
   ENTRY_POINT: './public/src/js/app.js'
 };
 
 // Development Tasks
-gulp.task('copy', function() {
+gulp.task('copy-html', function() {
   gulp.src(path.HTML)
     .pipe(gulp.dest(path.DEST));
 });
 
+gulp.task('copy-css', function() {
+  gulp.src(path.CSS)
+    .pipe(gulp.dest(path.DEST_CSS));
+});
+
 gulp.task('watch', function() {
-  gulp.watch(path.HTML, ['copy']);
+  gulp.watch(path.HTML, ['copy-html']);
+
+  gulp.watch(path.CSS, ['copy-css']);
 
   var watcher = watchify(browserify({
     entries: [path.ENTRY_POINT],
@@ -39,7 +43,7 @@ gulp.task('watch', function() {
     watcher.bundle()
       .pipe(source(path.OUT))
       .pipe(gulp.dest(path.DEST_SRC));
-      console.log('Updated')
+      console.log('Updated');
   })
     .bundle()
     .pipe(source(path.OUT))
@@ -47,25 +51,3 @@ gulp.task('watch', function() {
 });
 
 gulp.task('default', ['watch']);
-
-// Production Tasks
-gulp.task('build', function() {
-  browserify({
-    entries: [path.ENTRY_POINT],
-    transform: [reactify]
-  })
-    .bundle()
-    .pipe(source(path.MINIFIED_OUT))
-    .pipe(streamify(uglify(path.MINIFIED_OUT)))
-    .pipe(gulp.dest(path.DEST_BUILD));
-});
-
-gulp.task('replaceHTML', function() {
-  gulp.src(path.HTML)
-    .pipe(htmlreplace({
-      'js': 'build/' + path.MINIFIED_OUT
-    }))
-    .pipe(gulp.dest(path.DEST));
-});
-
-gulp.task('production', ['replaceHTML', 'build']);
